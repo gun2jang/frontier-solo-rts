@@ -1,4 +1,5 @@
 node_modules/
+.openai/
 .sites-runtime/
 *.zip
 qa-*.png
