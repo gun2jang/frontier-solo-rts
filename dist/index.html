@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#121815">
+  <meta name="description" content="FRONTIER — 채집하고, 건설하고, 확장하는 솔로 RTS 샌드박스.">
+  <title>FRONTIER — Solo RTS Sandbox</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23151c18'/%3E%3Cpath d='M11 9h21v5H17v6h12v5H17v10h-6z' fill='%23c8e6a0'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Frontier 홈"><svg viewBox="0 0 32 32"><path d="M4 4h24v6H11v5h14v6H11v7H4z" fill="currentColor"/></svg><span>FRONTIER<span class="brand-sub">SOLO RTS SANDBOX</span></span></a>
+    <div class="session"><span class="live-dot"></span><span>자유 플레이</span><span class="slash">/</span><span class="dim">TERRAN</span></div>
+    <div class="resources">
+      <div title="미네랄"><span class="mineral-icon">◆</span><strong id="minerals">500</strong><span class="resource-label">미네랄</span></div>
+      <div title="베스핀 가스"><span class="gas-icon">◈</span><strong id="gas">0</strong><span class="resource-label">가스</span></div>
+      <div title="사용 보급량 / 최대 보급량"><span class="supply-icon">▰</span><strong id="supply">4 <small>/ 10</small></strong><span class="resource-label">보급</span></div>
+    </div>
+    <div class="top-actions"><button id="soundBtn" class="icon-btn" title="소리 켜기" aria-label="소리 켜기">♪<i></i></button><button id="helpBtn" class="icon-btn" title="조작 가이드" aria-label="조작 가이드">?</button><button id="menuBtn" class="icon-btn menu-icon" title="게임 메뉴" aria-label="게임 메뉴">☰</button></div>
+  </header>
+
+  <main class="game-layout">
+    <section class="battlefield" id="battlefield" aria-label="게임 전장">
+      <canvas id="game" tabindex="0" aria-label="게임 맵. 좌클릭 또는 드래그로 선택, 우클릭으로 이동 및 채집"></canvas>
+      <div class="sector-label"><span class="tiny-cross">⌖</span><div>OUTPOST 01<span>아그리아 평원 <b>•</b> 128 × 96</span></div></div>
+      <div class="viewport-tools"><span id="cameraCoords">X 042 · Y 036</span><button id="centerBtn" title="기지로 이동 (Space)">⌖ <span>기지</span></button><button id="fullBtn" title="전체 화면" aria-label="전체 화면">⛶</button></div>
+      <div class="intro-hint" id="introHint"><span class="hint-badge">첫 명령을 내려보세요</span><strong>작은 기지에서, 당신의 제국으로.</strong><p>SCV를 선택하고 미네랄을 우클릭해 채집을 시작하세요.</p><span class="hint-controls"><b>좌클릭</b> 선택 <i>·</i> <b>우클릭</b> 명령 <i>·</i> <b>드래그</b> 다중 선택</span><button id="dismissHint" aria-label="안내 닫기">×</button></div>
+      <div class="mode-banner" id="modeBanner" hidden></div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <div class="pause-shade" id="pauseShade" hidden><span>Ⅱ</span><strong>일시 정지</strong><small>계속하려면 P 키를 누르세요</small></div>
+      <div class="map-bottom"><span><i class="live-dot"></i> 평화 구역 <b>적 AI 없음</b></span><span id="zoomLabel">100%</span></div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="panel-heading"><span>작전 브리핑</span><span class="micro">01 / SANDBOX</span></div>
+      <div class="briefing"><div class="eyebrow">THE FIRST FRONTIER</div><h1>모든 시작은<br>하나의 기지에서.</h1><p>경쟁도, 시간 제한도 없습니다.<br>나만의 속도로 기지를 확장하세요.</p><div class="mission-status"><span class="live-dot"></span> 자유 플레이 진행 중 <span class="mini-timer" id="sideTimer">00:00</span></div></div>
+      <div class="section-label">기지 건설 가이드 <span id="objectiveCount">0 / 4</span></div>
+      <div class="objectives" id="objectives">
+        <div data-goal="gather"><span class="check">01</span><div>자원 채집 시작<small>SCV로 미네랄 80 수집</small></div><span class="goal-arrow">↗</span></div>
+        <div data-goal="depot"><span class="check">02</span><div>보급고 건설<small>더 많은 유닛을 위한 준비</small></div><span class="goal-arrow">↗</span></div>
+        <div data-goal="barracks"><span class="check">03</span><div>배럭 건설<small>첫 번째 병력 생산 시설</small></div><span class="goal-arrow">↗</span></div>
+        <div data-goal="marine"><span class="check">04</span><div>마린 생산<small>나만의 부대 편성</small></div><span class="goal-arrow">↗</span></div>
+      </div>
+      <div class="section-label activity-label">통신 기록 <span class="record-dot"></span></div><div id="events" class="events" aria-live="polite"></div>
+      <div class="sidebar-bottom"><span class="radio-symbol">▥</span><div>ALL SYSTEMS OPERATIONAL<small>사령관의 명령을 기다립니다.</small></div></div>
+    </aside>
+  </main>
+
+  <footer class="console">
+    <section class="minimap-panel"><div class="console-heading"><span>전술 지도</span><span class="micro">M-01</span></div><canvas id="minimap" width="228" height="145" aria-label="미니맵. 클릭하면 카메라가 이동합니다"></canvas><div class="minimap-footer"><span>⌖ AGRIA</span><span>평지</span></div></section>
+    <section class="selection-panel"><div class="console-heading"><span>선택 정보</span><span id="selectionCount" class="micro">1 UNIT SELECTED</span></div><div class="selection-body"><div class="portrait-frame"><canvas id="portrait" width="110" height="110"></canvas><span class="portrait-corners"></span><div class="portrait-status">● ONLINE</div></div><div class="unit-details"><div class="unit-faction">TERRAN <span>지상 유닛</span></div><h2 id="unitName">SCV</h2><div class="hp-row"><div class="hp-track"><i id="hpFill"></i></div><span id="unitHP">60 / 60</span></div><p id="unitDescription">우주 건설 차량</p><div id="unitStatus" class="unit-status">명령 대기 중</div><div class="production" id="production" hidden><div><span id="productionLabel"></span><button id="cancelQueue" title="마지막 생산 취소">취소</button></div><div class="progress-track"><i id="productionFill"></i></div></div></div></div><div class="unit-thumbnails" id="unitThumbnails"></div></section>
+    <section class="command-panel"><div class="console-heading"><span id="commandTitle">명령</span><span class="micro" id="commandHelp">우클릭으로 빠른 명령</span></div><div id="commands" class="command-grid"></div></section>
+  </footer>
+  <div class="statusbar"><span><i class="live-dot"></i> SOLO EXPERIMENT <b>·</b> 자체 제작 그래픽 · StarCraft에서 영감을 받은 팬 프로젝트</span><div><button id="speedBtn" title="게임 속도 변경">1× 속도</button><button id="pauseBtn" title="일시 정지 (P)">Ⅱ 일시 정지</button><span class="clock" id="timer">00:00</span></div></div>
+</div>
+
+<dialog id="helpDialog"><div class="dialog-header"><span class="eyebrow">FIELD MANUAL</span><button class="close-dialog" aria-label="닫기">×</button></div><h2>사령관을 위한 안내서</h2><p>적 없는 평지에서 자유롭게 채집하고 기지를 건설하세요.</p><div class="guide-grid"><div><kbd>좌클릭 / 드래그</kbd><span>유닛 선택 / 다중 선택</span></div><div><kbd>우클릭</kbd><span>이동 · 채집 · 건설 계속</span></div><div><kbd>Shift + 클릭</kbd><span>선택 추가 / 명령 예약</span></div><div><kbd>방향키</kbd><span>맵 탐색 · 화면 가장자리 이동</span></div><div><kbd>휠</kbd><span>화면 확대 / 축소</span></div><div><kbd>Space</kbd><span>기지로 돌아가기</span></div><div><kbd>Ctrl + 1–9</kbd><span>부대 지정</span></div><div><kbd>1–9 / 더블클릭</kbd><span>부대 선택 / 같은 유닛 선택</span></div><div><kbd>B</kbd><span>SCV 건설 메뉴</span></div><div><kbd>Esc / P</kbd><span>명령 취소 / 일시 정지</span></div></div><div class="guide-note">시작 팁 <span>SCV 선택 → 미네랄 우클릭 → 보급고 → 배럭 → 마린 생산.<br>가스는 가이저에 정제소를 지은 후 채집할 수 있습니다.</span></div><button class="primary-btn close-dialog">준비 완료, 시작하기 <span>↗</span></button></dialog>
+<dialog id="menuDialog"><div class="dialog-header"><span class="eyebrow">COMMAND CENTER</span><button class="close-dialog" aria-label="닫기">×</button></div><h2>게임 메뉴</h2><p>진행 상황은 15초마다 이 브라우저에 자동 저장됩니다.</p><div class="menu-buttons"><button id="saveBtn">진행 상황 저장 <span>↓</span></button><button id="loadBtn">저장한 게임 불러오기 <span>↗</span></button><button id="newBtn">새 게임 <span>↻</span></button></div><div class="reset-confirm" id="resetConfirm" hidden><p>현재 진행 상황을 지우고 새로 시작할까요?</p><button id="confirmNew" class="primary-btn">새 게임 시작</button><button id="cancelNew">취소</button></div><small id="saveInfo">저장 기록 없음</small></dialog>
+<script src="game.js"></script>
+</body>
+</html>

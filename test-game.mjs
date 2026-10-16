@@ -1,0 +1,31 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const noop=()=>{};
+const context2d=new Proxy({measureText:s=>({width:s.length*6})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
+function element(){return{style:{},dataset:{},classList:{toggle:noop},children:[],width:228,height:145,innerHTML:'',textContent:'',hidden:false,appendChild(e){this.children.push(e);},getContext:()=>context2d,toDataURL:()=>'',addEventListener:noop,setAttribute:noop,getBoundingClientRect:()=>({width:1000,height:600,left:0,top:0}),focus:noop};}
+const els=new Map(),storage=new Map();
+const document={getElementById:id=>{if(!els.has(id))els.set(id,element());return els.get(id);},createElement:element,querySelectorAll:()=>[],querySelector:()=>null,addEventListener:noop};
+const sandbox={document,window:{addEventListener:noop,devicePixelRatio:1},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},ResizeObserver:class{observe(){}},requestAnimationFrame:noop,setTimeout:()=>0,clearTimeout:noop,console,Math,Date};
+vm.createContext(sandbox);
+let source=fs.readFileSync(new URL('./dist/game.js',import.meta.url),'utf8');
+source=source.replace('window.Frontier={','window.test={newGame,tick,add,select,setOrder,startBuild,place,train,supply,cancelProduction,save,load,route,blocked,render,get,executeCommand,getState:()=>state};window.Frontier={');
+vm.runInContext(source,sandbox);const t=sandbox.window.test;
+const advance=seconds=>{for(let n=0;n<seconds*20;n++)t.tick(.05);};
+const entity=type=>t.getState().entities.find(e=>e.type===type&&!e.dead);
+let passed=0;function test(name,fn){t.newGame();fn();passed++;console.log('PASS '+name);}
+test('SCV completes repeated mineral round trips and finite resource depletion',()=>{const u=entity('scv'),r=entity('mineral');t.setOrder(u,{kind:'gather',target:r.id});advance(70);assert(t.getState().minerals>=540);assert(r.amount<1500);assert(t.getState().gathered>=40);});
+test('depot placement, paid construction, worker travel, and supply activation',()=>{t.startBuild('depot');t.place({x:920,y:1200});assert.equal(t.getState().minerals,400);assert.equal(t.supply().cap,10);advance(30);assert.equal(entity('depot').progress,1);assert.equal(t.supply().cap,18);});
+test('overlapping building placement is rejected without spending',()=>{t.startBuild('depot');t.place({x:1110,y:1060});assert.equal(t.getState().minerals,500);assert(!entity('depot'));});
+test('prerequisites and unaffordable training do not spend resources',()=>{t.startBuild('factory');t.place({x:850,y:1000});assert(!entity('factory'));const cc=entity('cc');t.select([cc.id]);t.getState().minerals=25;t.train('scv');assert.equal(cc.queue.length,0);assert.equal(t.getState().minerals,25);});
+test('barracks construction and marine production unlock guide objectives',()=>{const u=entity('scv');t.add('depot',850,1000);t.startBuild('barracks');t.place({x:930,y:1340});advance(45);const b=entity('barracks');assert.equal(b.progress,1);t.select([b.id]);t.train('marine');advance(15);assert(entity('marine'));assert(t.getState().goals.marine);});
+test('refinery only builds on geysers, then auto gathers real gas',()=>{t.startBuild('refinery');t.place({x:800,y:1300});assert(!entity('refinery'));t.place({x:1170,y:820});advance(90);assert.equal(entity('refinery').progress,1);assert(t.getState().gas>=16);assert(entity('geyser').amount<5000);});
+test('supply is reserved across production queues',()=>{const cc=entity('cc');t.select([cc.id]);for(let i=0;i<5;i++)t.train('scv');assert.equal(cc.queue.length,5);assert.equal(t.supply().used,9);advance(10);t.train('scv');assert.equal(t.supply().used,10);t.train('scv');assert.equal(t.supply().used,10);});
+test('queue cancellation refunds resources and reserved supply',()=>{const cc=entity('cc');t.select([cc.id]);t.train('scv');assert.equal(t.getState().minerals,450);t.cancelProduction();assert.equal(t.getState().minerals,500);assert.equal(t.supply().used,4);});
+test('construction cancellation returns 75% and frees a geyser',()=>{t.startBuild('refinery');t.place({x:1170,y:820});t.select([entity('refinery').id]);t.cancelProduction();assert.equal(t.getState().minerals,475);assert(!entity('refinery'));assert(!entity('geyser').covered);});
+test('factory produces tanks with both resources',()=>{const f=t.add('factory',850,1300);t.getState().gas=200;t.select([f.id]);t.train('tank');advance(25);assert(entity('tank'));assert.equal(t.getState().gas,100);assert.equal(t.supply().used,6);});
+test('routing moves a worker around a command center',()=>{const u=entity('scv');u.x=900;u.y=1060;t.setOrder(u,{kind:'move',point:{x:1300,y:1060}});advance(15);assert(Math.hypot(u.x-1300,u.y-1060)<10);});
+test('stopping construction pauses progress and right-click order resumes it',()=>{t.startBuild('depot');t.place({x:920,y:1200});advance(9);const b=entity('depot'),u=entity('scv');t.executeCommand('stop');const p=b.progress;advance(10);assert.equal(b.progress,p);t.setOrder(u,{kind:'build',target:b.id});advance(25);assert.equal(b.progress,1);});
+test('save/load restores economy, units, and in-flight production',()=>{t.select([entity('cc').id]);t.train('scv');advance(3);const before=JSON.stringify(t.getState());assert(t.save(true));t.newGame();assert(t.load(true));assert.equal(JSON.stringify(t.getState()),before);advance(10);assert.equal(t.getState().entities.filter(e=>e.type==='scv').length,5);});
+test('rendering executes for a live game and construction ghost',()=>{t.render();t.startBuild('depot');t.render();});
+console.log(`\n${passed} simulation scenarios passed.`);

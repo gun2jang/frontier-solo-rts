@@ -1,0 +1,1 @@
+{"name":"frontier-solo-rts","version":"1.0.0","private":true,"description":"Original browser-based solo RTS sandbox inspired by classic Terran base building.","scripts":{"dev":"node server.mjs","start":"node server.mjs","check":"node --check dist/game.js","test":"node test-game.mjs"}}
